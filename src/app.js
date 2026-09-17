@@ -14,25 +14,31 @@ const authRoutes = require('./routes/authRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 200,
   message: { success: false, error: 'Too many requests' }
 });
 
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://supportflow-frontend.vercel.app',
+    process.env.CLIENT_URL,
+  ].filter(Boolean),
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', limiter);
 
-// Routes
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'SupportFlow API running' });
 });
@@ -41,10 +47,12 @@ app.get('/', (req, res) => {
   res.json({ name: 'SupportFlow API', version: '1.0.0' });
 });
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/tickets/:id/messages', messageRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
